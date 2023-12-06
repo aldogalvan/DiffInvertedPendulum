@@ -1,0 +1,4 @@
+# ninja log v5
+0	5	0	clean	a6a0b8a8041b8512
+0	2757	1701897476612562630	CMakeFiles/DiffInvertedPendulum.dir/main.cpp.o	e43b801d22908a76
+2760	2924	1701897476776562800	DiffInvertedPendulum	ad3f590a974d58c7
