@@ -63,9 +63,35 @@ struct Pendulum
 
     ~Pendulum(){}
 
+    static Matrix3d InertiaTensorCylinder(double mass, double radius, double height) {
+        Eigen::Matrix3d inertiaTensor;
+        double I_xx_yy = 1.0 / 12.0 * mass * (3.0 * radius * radius + height * height);
+        double I_zz = 0.5 * mass * radius * radius;
+
+        inertiaTensor << I_xx_yy, 0, 0,
+                0, I_xx_yy, 0,
+                0, 0, I_zz;
+
+        return inertiaTensor;
+    }
+
     void updateDynamics(double dt)
     {
+        Matrix3d M_ = Matrix3d::Identity()*m;
+        Matrix3d J_ = q*J*q.inverse();
 
+        cVector3d pos = tool->getDeviceGlobalPos();
+        cVector3d vel = tool->getDeviceGlobalLinVel();
+        cMatrix3d rot = tool->getDeviceGlobalRot();
+        cVector3d rotvel = tool->getDeviceGlobalAngVel();
+
+        auto xh = pos.eigen();
+        auto vh = vel.eigen();
+        auto qh = Quaterniond(rot.eigen());
+        auto wh = rotvel.eigen();
+
+        Vector3d Fc = Kc*((x + q*xc) - xh) + Bc*((v + q*w) - vh);
+        Vector3d Tc = Bth*(w)
     }
 
     // the tool
@@ -80,17 +106,17 @@ struct Pendulum
     // the pendulum
     cShapeCylinder* pendulum;
 
+    // parameters for the pendulum
+    double r = 0.01; // the radius
+    double l = 0.2; // the length
     double m = 1; // the mass
-    MatrixXd J; // the moment of inertia
+    MatrixXd J = InertiaTensorCylinder(m,r,l); // the moment of inertia
+
+    // pendulum states
     Quaterniond q; // the orientation
     Vector3d w; // the angular velocity
     Vector3d x; // the linear displacement
     Vector3d v; // the linear velocity
-
-    // parameters for the pendulum
-    double r = 0.01; // the radius
-    double l = 0.2; // the length
-
 };
 
 Pendulum* pendulum;
@@ -99,13 +125,6 @@ Pendulum* pendulum;
 // GENERAL SETTINGS
 //------------------------------------------------------------------------------
 
-// stereo Mode
-/*
-    C_STEREO_DISABLED:            Stereo is disabled
-    C_STEREO_ACTIVE:              Active stereo for OpenGL NVDIA QUADRO cards
-    C_STEREO_PASSIVE_LEFT_RIGHT:  Passive stereo where L/R images are rendered next to each other
-    C_STEREO_PASSIVE_TOP_BOTTOM:  Passive stereo where L/R images are rendered above each other
-*/
 cStereoMode stereoMode = C_STEREO_DISABLED;
 
 // fullscreen mode
@@ -134,7 +153,7 @@ cHapticDeviceHandler* handler;
 // a pointer to the current haptic device
 cGenericHapticDevicePtr hapticDevice;
 
-//
+// the cursor representing the haptic device
 cToolCursor* tool;
 
 // a label to display the haptic device model
@@ -390,7 +409,6 @@ int main(int argc, char* argv[])
     // define a radius for the virtual tool (sphere)
     tool->setRadius(0.015);
     tool->setShowFrame(false);
-
     tool->m_material->setRed();
 
     // haptic forces are enabled only if small forces are first sent to the device;
