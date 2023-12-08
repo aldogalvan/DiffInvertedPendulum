@@ -39,7 +39,7 @@ include CMakeFiles/rules.ninja
 #############################################
 # Logical path to working directory; prefix for absolute paths.
 
-cmake_ninja_workdir = /home/agalvan-admin/CLionProjects/DiffInvertedPendulum/cmake-build-debug/
+cmake_ninja_workdir = /home/aldo/DiffInvertedPendulum/cmake-build-debug/
 # =============================================================================
 # Object build statements for EXECUTABLE target DiffInvertedPendulum
 
@@ -49,11 +49,11 @@ cmake_ninja_workdir = /home/agalvan-admin/CLionProjects/DiffInvertedPendulum/cma
 
 build cmake_object_order_depends_target_DiffInvertedPendulum: phony || CMakeFiles/DiffInvertedPendulum.dir
 
-build CMakeFiles/DiffInvertedPendulum.dir/main.cpp.o: CXX_COMPILER__DiffInvertedPendulum_unscanned_Debug /home/agalvan-admin/CLionProjects/DiffInvertedPendulum/main.cpp || cmake_object_order_depends_target_DiffInvertedPendulum
+build CMakeFiles/DiffInvertedPendulum.dir/main.cpp.o: CXX_COMPILER__DiffInvertedPendulum_unscanned_Debug /home/aldo/DiffInvertedPendulum/main.cpp || cmake_object_order_depends_target_DiffInvertedPendulum
   DEFINES = -DLINUX -D_LINUX
   DEP_FILE = CMakeFiles/DiffInvertedPendulum.dir/main.cpp.o.d
   FLAGS = -g -std=gnu++17 -fdiagnostics-color=always
-  INCLUDES = -I/home/agalvan-admin/chai3d/src -I/home/agalvan-admin/chai3d/external/glew/include -isystem /usr/include/eigen3
+  INCLUDES = -I/home/aldo/chai3d/src -I/home/aldo/chai3d/external/glew/include -isystem /usr/include/eigen3
   OBJECT_DIR = CMakeFiles/DiffInvertedPendulum.dir
   OBJECT_FILE_DIR = CMakeFiles/DiffInvertedPendulum.dir
 
@@ -65,10 +65,10 @@ build CMakeFiles/DiffInvertedPendulum.dir/main.cpp.o: CXX_COMPILER__DiffInverted
 #############################################
 # Link the executable DiffInvertedPendulum
 
-build DiffInvertedPendulum: CXX_EXECUTABLE_LINKER__DiffInvertedPendulum_Debug CMakeFiles/DiffInvertedPendulum.dir/main.cpp.o | /usr/lib/x86_64-linux-gnu/libglfw.so.3.3 /home/agalvan-admin/chai3d_build/libchai3d.a /usr/lib/x86_64-linux-gnu/libGL.so /usr/lib/x86_64-linux-gnu/libGLU.so
+build DiffInvertedPendulum: CXX_EXECUTABLE_LINKER__DiffInvertedPendulum_Debug CMakeFiles/DiffInvertedPendulum.dir/main.cpp.o | /usr/lib/x86_64-linux-gnu/libglfw.so.3.3 /home/aldo/chai3d_build/libchai3d.a /usr/lib/x86_64-linux-gnu/libGL.so /usr/lib/x86_64-linux-gnu/libGLU.so
   FLAGS = -g
-  LINK_LIBRARIES = -Wl,-rpath,/home/agalvan-admin/chai3d/external/DHD/lib/lin-x86_64  /usr/lib/x86_64-linux-gnu/libglfw.so.3.3  /home/agalvan-admin/chai3d_build/libchai3d.a  /usr/lib/x86_64-linux-gnu/libGL.so  /usr/lib/x86_64-linux-gnu/libGLU.so  -ldrd  -lusb-1.0  -lrt  -lpthread  -ldl
-  LINK_PATH = -L/home/agalvan-admin/chai3d/external/DHD/lib/lin-x86_64
+  LINK_LIBRARIES = -Wl,-rpath,/home/aldo/chai3d/external/DHD/lib/lin-x86_64  /usr/lib/x86_64-linux-gnu/libglfw.so.3.3  /home/aldo/chai3d_build/libchai3d.a  /usr/lib/x86_64-linux-gnu/libGL.so  /usr/lib/x86_64-linux-gnu/libGLU.so  -ldrd  -lusb-1.0  -lrt  -lpthread  -ldl
+  LINK_PATH = -L/home/aldo/chai3d/external/DHD/lib/lin-x86_64
   OBJECT_DIR = CMakeFiles/DiffInvertedPendulum.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -80,7 +80,7 @@ build DiffInvertedPendulum: CXX_EXECUTABLE_LINKER__DiffInvertedPendulum_Debug CM
 # Utility command for edit_cache
 
 build CMakeFiles/edit_cache.util: CUSTOM_COMMAND
-  COMMAND = cd /home/agalvan-admin/CLionProjects/DiffInvertedPendulum/cmake-build-debug && /snap/clion/259/bin/cmake/linux/x64/bin/cmake -E echo No\ interactive\ CMake\ dialog\ available.
+  COMMAND = cd /home/aldo/DiffInvertedPendulum/cmake-build-debug && /snap/clion/259/bin/cmake/linux/x64/bin/cmake -E echo No\ interactive\ CMake\ dialog\ available.
   DESC = No interactive CMake dialog available...
   restat = 1
 
@@ -91,7 +91,7 @@ build edit_cache: phony CMakeFiles/edit_cache.util
 # Utility command for rebuild_cache
 
 build CMakeFiles/rebuild_cache.util: CUSTOM_COMMAND
-  COMMAND = cd /home/agalvan-admin/CLionProjects/DiffInvertedPendulum/cmake-build-debug && /snap/clion/259/bin/cmake/linux/x64/bin/cmake --regenerate-during-build -S/home/agalvan-admin/CLionProjects/DiffInvertedPendulum -B/home/agalvan-admin/CLionProjects/DiffInvertedPendulum/cmake-build-debug
+  COMMAND = cd /home/aldo/DiffInvertedPendulum/cmake-build-debug && /snap/clion/259/bin/cmake/linux/x64/bin/cmake --regenerate-during-build -S/home/aldo/DiffInvertedPendulum -B/home/aldo/DiffInvertedPendulum/cmake-build-debug
   DESC = Running CMake to regenerate build system...
   pool = console
   restat = 1
@@ -107,7 +107,7 @@ build rebuild_cache: phony CMakeFiles/rebuild_cache.util
 # =============================================================================
 
 #############################################
-# Folder: /home/agalvan-admin/CLionProjects/DiffInvertedPendulum/cmake-build-debug
+# Folder: /home/aldo/DiffInvertedPendulum/cmake-build-debug
 
 build all: phony DiffInvertedPendulum
 
@@ -118,14 +118,14 @@ build all: phony DiffInvertedPendulum
 #############################################
 # Re-run CMake if any of its inputs changed.
 
-build build.ninja: RERUN_CMAKE | /home/agalvan-admin/CLionProjects/DiffInvertedPendulum/CMakeLists.txt /home/agalvan-admin/chai3d_build/CHAI3DConfig.cmake /home/agalvan-admin/chai3d_build/CHAI3DConfigVersion.cmake /home/agalvan-admin/chai3d_build/CHAI3DTargets.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeCInformation.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeCXXInformation.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeCommonLanguageInclude.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeGenericSystem.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeInitializeConfigs.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeLanguageInformation.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeSystemSpecificInformation.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeSystemSpecificInitialize.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Compiler/CMakeCommonCompilerMacros.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Compiler/GNU-C.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Compiler/GNU-CXX.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Compiler/GNU.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux-GNU-C.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux-GNU-CXX.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux-GNU.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux-Initialize.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/UnixPaths.cmake /usr/lib/cmake/eigen3/Eigen3Config.cmake /usr/lib/cmake/eigen3/Eigen3ConfigVersion.cmake /usr/lib/cmake/eigen3/Eigen3Targets.cmake /usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3Config.cmake /usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3ConfigVersion.cmake /usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3Targets-none.cmake /usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3Targets.cmake CMakeCache.txt CMakeFiles/3.27.0/CMakeCCompiler.cmake CMakeFiles/3.27.0/CMakeCXXCompiler.cmake CMakeFiles/3.27.0/CMakeSystem.cmake
+build build.ninja: RERUN_CMAKE | /home/aldo/DiffInvertedPendulum/CMakeLists.txt /home/aldo/chai3d_build/CHAI3DConfig.cmake /home/aldo/chai3d_build/CHAI3DConfigVersion.cmake /home/aldo/chai3d_build/CHAI3DTargets.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeCInformation.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeCXXInformation.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeCommonLanguageInclude.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeGenericSystem.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeInitializeConfigs.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeLanguageInformation.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeSystemSpecificInformation.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeSystemSpecificInitialize.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Compiler/CMakeCommonCompilerMacros.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Compiler/GNU-C.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Compiler/GNU-CXX.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Compiler/GNU.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux-GNU-C.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux-GNU-CXX.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux-GNU.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux-Initialize.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/UnixPaths.cmake /usr/lib/cmake/eigen3/Eigen3Config.cmake /usr/lib/cmake/eigen3/Eigen3ConfigVersion.cmake /usr/lib/cmake/eigen3/Eigen3Targets.cmake /usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3Config.cmake /usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3ConfigVersion.cmake /usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3Targets-none.cmake /usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3Targets.cmake CMakeCache.txt CMakeFiles/3.27.0/CMakeCCompiler.cmake CMakeFiles/3.27.0/CMakeCXXCompiler.cmake CMakeFiles/3.27.0/CMakeSystem.cmake
   pool = console
 
 
 #############################################
 # A missing CMake input file is not an error.
 
-build /home/agalvan-admin/CLionProjects/DiffInvertedPendulum/CMakeLists.txt /home/agalvan-admin/chai3d_build/CHAI3DConfig.cmake /home/agalvan-admin/chai3d_build/CHAI3DConfigVersion.cmake /home/agalvan-admin/chai3d_build/CHAI3DTargets.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeCInformation.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeCXXInformation.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeCommonLanguageInclude.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeGenericSystem.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeInitializeConfigs.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeLanguageInformation.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeSystemSpecificInformation.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeSystemSpecificInitialize.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Compiler/CMakeCommonCompilerMacros.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Compiler/GNU-C.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Compiler/GNU-CXX.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Compiler/GNU.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux-GNU-C.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux-GNU-CXX.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux-GNU.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux-Initialize.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/UnixPaths.cmake /usr/lib/cmake/eigen3/Eigen3Config.cmake /usr/lib/cmake/eigen3/Eigen3ConfigVersion.cmake /usr/lib/cmake/eigen3/Eigen3Targets.cmake /usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3Config.cmake /usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3ConfigVersion.cmake /usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3Targets-none.cmake /usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3Targets.cmake CMakeCache.txt CMakeFiles/3.27.0/CMakeCCompiler.cmake CMakeFiles/3.27.0/CMakeCXXCompiler.cmake CMakeFiles/3.27.0/CMakeSystem.cmake: phony
+build /home/aldo/DiffInvertedPendulum/CMakeLists.txt /home/aldo/chai3d_build/CHAI3DConfig.cmake /home/aldo/chai3d_build/CHAI3DConfigVersion.cmake /home/aldo/chai3d_build/CHAI3DTargets.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeCInformation.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeCXXInformation.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeCommonLanguageInclude.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeGenericSystem.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeInitializeConfigs.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeLanguageInformation.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeSystemSpecificInformation.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/CMakeSystemSpecificInitialize.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Compiler/CMakeCommonCompilerMacros.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Compiler/GNU-C.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Compiler/GNU-CXX.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Compiler/GNU.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux-GNU-C.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux-GNU-CXX.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux-GNU.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux-Initialize.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/Linux.cmake /snap/clion/259/bin/cmake/linux/x64/share/cmake-3.27/Modules/Platform/UnixPaths.cmake /usr/lib/cmake/eigen3/Eigen3Config.cmake /usr/lib/cmake/eigen3/Eigen3ConfigVersion.cmake /usr/lib/cmake/eigen3/Eigen3Targets.cmake /usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3Config.cmake /usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3ConfigVersion.cmake /usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3Targets-none.cmake /usr/lib/x86_64-linux-gnu/cmake/glfw3/glfw3Targets.cmake CMakeCache.txt CMakeFiles/3.27.0/CMakeCCompiler.cmake CMakeFiles/3.27.0/CMakeCXXCompiler.cmake CMakeFiles/3.27.0/CMakeSystem.cmake: phony
 
 
 #############################################

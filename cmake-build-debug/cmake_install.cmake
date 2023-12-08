@@ -1,4 +1,4 @@
-# Install script for directory: /home/agalvan-admin/CLionProjects/DiffInvertedPendulum
+# Install script for directory: /home/aldo/DiffInvertedPendulum
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/agalvan-admin/CLionProjects/DiffInvertedPendulum/cmake-build-debug/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/aldo/DiffInvertedPendulum/cmake-build-debug/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

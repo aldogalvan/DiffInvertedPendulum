@@ -51,6 +51,117 @@ using namespace chai3d;
 using namespace std;
 //------------------------------------------------------------------------------
 
+VectorXd q2vec(Quaterniond q)
+{
+    return Vector4d(q.w(),q.x(),q.y(),q.z());
+}
+Quaterniond operator*(double scalar, const Quaterniond& q) {
+    return Quaterniond(scalar * q.w(), scalar * q.x(), scalar * q.y(), scalar * q.z());
+}
+
+// Quaternion addition
+Quaterniond operator+(const Quaterniond& q1, const Quaterniond& q2) {
+    return Quaterniond(q1.w() + q2.w(), q1.x() + q2.x(), q1.y() + q2.y(), q1.z() + q2.z());
+}
+
+Matrix3d vec2skew(const Vector3d& v) {
+    Matrix3d V;
+    V << 0, -v.z(), v.y(),
+            v.z(), 0,  -v.x(),
+            -v.y(), v.x(), 0;
+    return V;
+}
+
+MatrixXd Q(Quaterniond q)
+{
+    MatrixXd Q = MatrixXd::Zero(4,3);
+    Q(0,0) = 0.5*q.w();
+    Q(0,1) = 0.5*q.z();
+    Q(0,2) = -0.5*q.y();
+    Q(1,0) = -0.5*q.z();
+    Q(1,1) = 0.5*q.w();
+    Q(1,2) = 0.5*q.x();
+    Q(2,0) = 0.5*q.y();
+    Q(2,1) = -0.5*q.x();
+    Q(2,2) = 0.5*q.w();
+    Q(3,0) = -0.5*q.x();
+    Q(3,1) = -0.5*q.y();
+    Q(3,2) = -0.5*q.z();
+    return Q;
+}
+MatrixXd pQpx()
+{
+    MatrixXd ret(4,3);
+    ret(1,2) = 1;
+    ret(2,1) = -1;
+    ret(3,0) = -1;
+    return 0.5*ret;
+}
+
+MatrixXd pQpy()
+{
+    MatrixXd ret(4,3);
+    ret(0,2) = -1;
+    ret(2,0) = 1;
+    ret(3,1) = -1;
+    return 0.5*ret;
+}
+
+MatrixXd pQpz()
+{
+    MatrixXd ret(4,3);
+    ret(0,1) = 1;
+    ret(1,0) = -1;
+    ret(3,2) = -1;
+    return 0.5*ret;
+}
+
+MatrixXd pQpw()
+{
+    MatrixXd ret(4,3);
+    ret(0,0) = 1;
+    ret(1,1) = 1;
+    ret(2,2) = 1;
+    return 0.5*ret;
+}
+
+MatrixXd pRpx(Quaterniond& q)
+{
+    MatrixXd ret(3,3);
+    ret(0,0) = q.x(); ret(0,1) = q.y(); ret(0,2) = q.z();
+    ret(1,0) = q.y(); ret(1,1) = -q.x(); ret(1,2) = -q.w();
+    ret(2,0) = q.z(); ret(2,1) = q.w(); ret(2,2) = -q.x();
+    return 2*ret;
+}
+
+MatrixXd pRpy(Quaterniond& q)
+{
+    MatrixXd ret(3,3);
+    ret(0,0) = -q.y(); ret(0,1) = q.x(); ret(0,2) = q.w();
+    ret(1,0) = q.x(); ret(1,1) = q.y(); ret(1,2) = q.z();
+    ret(2,0) = -q.w(); ret(2,1) = q.z(); ret(2,2) = -q.y();
+    return 2*ret;
+}
+
+MatrixXd pRpz(Quaterniond& q)
+{
+    MatrixXd ret(3,3);
+    ret(0,0) = -q.z(); ret(0,1) = -q.w(); ret(0,2) = q.x();
+    ret(1,0) = q.w(); ret(1,1) = -q.z(); ret(1,2) = q.y();
+    ret(2,0) = q.x(); ret(2,1) = q.y(); ret(2,2) = q.z();
+    return 2*ret;
+}
+
+MatrixXd pRpw(Quaterniond& q)
+{
+    MatrixXd ret(3,3);
+    ret(0,0) = q.w(); ret(0,1) = -q.z(); ret(0,2) = q.y();
+    ret(1,0) = q.z(); ret(1,1) = q.w(); ret(1,2) = -q.x();
+    ret(2,0) = -q.y(); ret(2,1) = q.x(); ret(2,2) = q.w();
+    return 2*ret;
+}
+
+
 struct Pendulum
 {
     Pendulum(cToolCursor* a_tool)
@@ -58,13 +169,24 @@ struct Pendulum
         tool = a_tool;
 
         // create a sphere (cursor) to represent the haptic device
-        pendulum = new cShapeCylinder(0.01,0.01,0.2);
+        pendulum = new cMesh();
+        cCreateCylinder(pendulum,0.2,0.01);
+        pendulum->m_material->setRed();
+
+        // align this pendulum with the center of mass
+        cVector3d com(0,0,0);
+        for (int i = 0 ; i < pendulum->getNumVertices(); i++)
+        {
+            com += pendulum->m_vertices->getLocalPos(i);
+        }
+        com /= pendulum->getNumVertices();
+        pendulum->offsetVertices(-com);
     }
 
     ~Pendulum(){}
 
     static Matrix3d InertiaTensorCylinder(double mass, double radius, double height) {
-        Eigen::Matrix3d inertiaTensor;
+        Matrix3d inertiaTensor;
         double I_xx_yy = 1.0 / 12.0 * mass * (3.0 * radius * radius + height * height);
         double I_zz = 0.5 * mass * radius * radius;
 
@@ -75,7 +197,7 @@ struct Pendulum
         return inertiaTensor;
     }
 
-    void updateDynamics(double dt)
+    void SemiImplicitEuler(double dt)
     {
         Matrix3d M_ = Matrix3d::Identity()*m;
         Matrix3d J_ = q*J*q.inverse();
@@ -90,21 +212,158 @@ struct Pendulum
         auto qh = Quaterniond(rot.eigen());
         auto wh = rotvel.eigen();
 
-        Vector3d Fc = Kc*((x + q*xc) - xh) + Bc*((v + q*w) - vh);
-        Vector3d Tc = Bth*(w)
+        Fc = Kc*(xh - (x + q*xc)) + Bc*(vh - (v + w.cross(xc)));
+        Tc = Bth*(wh - w) + (q*xc).cross(Fc);
+
+        Vector3d F = Fc + m*Vector3d(0,0,-0.0098);
+        Vector3d T = (q*xc).cross(Fc) + Tc;
+
+        // explicit euler integration
+        v += dt*M_.inverse()*F;
+        x += v*dt;
+        w += dt*J_.inverse()*T;
+        q = q + 0.5*dt*Quaterniond(0,w(0),w(1),w(2))*q;
+        q.normalize();
+
+        updateGraphics();
+
+    }
+
+    void ImplicitEuler(double dt)
+    {
+        Matrix3d M_ = Matrix3d::Identity()*m;
+        MatrixXd P = m*v;
+        MatrixXd L = q*J*q.inverse()*w;
+        MatrixXd I = MatrixXd::Identity(3,3);
+
+        cVector3d pos = tool->getDeviceGlobalPos();
+        cVector3d vel = tool->getDeviceGlobalLinVel();
+        cMatrix3d rot = tool->getDeviceGlobalRot();
+        cVector3d rotvel = tool->getDeviceGlobalAngVel();
+
+        auto xh = pos.eigen();
+        auto vh = vel.eigen();
+        auto qh = Quaterniond(rot.eigen());
+        auto wh = rotvel.eigen();
+
+        // coupling force
+        Fc = Kc*(xh - (x + q*xc)) + Bc*(vh - (v + w.cross(xc)));
+        Tc = Bth*(wh - w) + (q*xc).cross(Fc);
+
+        Vector3d F = Fc + m*Vector3d(0,0,-0.0098);
+        Vector3d T = (q*xc).cross(Fc) + Tc;
+
+        // coupling jacobian
+        MatrixXd J_c = MatrixXd::Zero(13,13);
+
+        Quaterniond dq = qh*q.inverse()*Quaterniond::Identity();
+        Quaterniond q_inv = q.inverse();
+        MatrixXd C = Vector4d(dq.x(),dq.y(),dq.z(),dq.w())*RowVector4d(q_inv.x(),q_inv.y(),q_inv.z(),q_inv.w());
+
+        // Derivative of angular velocity wrt quaternion
+        VectorXd pwpqx = (pRpx(q)*(I/m)*q.inverse() + q*(I/m)*pRpx(q).transpose())*L; //! CHECK
+        VectorXd pwpqy = (pRpy(q)*(I/m)*q.inverse() + q*(I/m)*pRpy(q).transpose())*L; //! CHECK
+        VectorXd pwpqz = (pRpz(q)*(I/m)*q.inverse() + q*(I/m)*pRpz(q).transpose())*L; //! CHECK
+        VectorXd pwpqw = (pRpw(q)*(I/m)*q.inverse() + q*(I/m)*pRpw(q).transpose())*L; //! CHECK
+
+        // derivatives of force with respect to quaternion
+        VectorXd pFcpqx= -Kc*pRpx(q)*xc + Bc * vec2skew(xc)*pwpqx; //! CHECK!
+        VectorXd pFcpqy= -Kc*pRpy(q)*xc + Bc * vec2skew(xc)*pwpqy; //! CHECK!
+        VectorXd pFcpqz= -Kc*pRpz(q)*xc + Bc * vec2skew(xc)*pwpqz; //! CHECK!
+        VectorXd pFcpqw= -Kc*pRpw(q)*xc + Bc * vec2skew(xc)*pwpqw; //! CHECK!
+
+        // Derivative of linear velocity with respect to quaternion
+        MatrixXd pupq = 2*acos(dq.w())*C.block<3,4>(0,0) - 2/(sqrt(1-dq.w()*dq.w()))*dq.vec()*C.block<1,4>(3,0); //! CHECK!
+        if (pupq.hasNaN())
+            pupq.setZero();
+
+        // Elements of Jacobian
+        MatrixXd pFcpx = -Kc*MatrixXd::Identity(3,3); //! CHECK!
+        MatrixXd pTcpx = vec2skew(q*xc)*pFcpx; //! CHECK!
+        MatrixXd pFcpq(3,4);
+        pFcpq.col(0) = pFcpqx; //! CHECK!
+        pFcpq.col(1) = pFcpqy; //! CHECK!
+        pFcpq.col(2) = pFcpqz; //! CHECK!
+        pFcpq.col(3) = pFcpqw; //! CHECK!
+        MatrixXd pTcpq(3,4);
+
+        pTcpq.col(0) = vec2skew(q*xc)*pFcpqx - vec2skew(Fc)*pRpx(q)*xc + Kth*pupq.col(0) - Bth*pwpqx; //! Check!
+        pTcpq.col(1) = vec2skew(q*xc)*pFcpqy - vec2skew(Fc)*pRpy(q)*xc + Kth*pupq.col(1) - Bth*pwpqy; //! Check!
+        pTcpq.col(2) = vec2skew(q*xc)*pFcpqz - vec2skew(Fc)*pRpz(q)*xc + Kth*pupq.col(2) - Bth*pwpqz; //! Check!
+        pTcpq.col(3) = vec2skew(q*xc)*pFcpqw - vec2skew(Fc)*pRpw(q)*xc + Kth*pupq.col(3) - Bth*pwpqw; //! Check!
+        MatrixXd pFcpP = Bc*I/m; //! Check!
+        MatrixXd pTcpP = vec2skew(q*xc)*pFcpP; //! Check!
+        MatrixXd pFcpL = Bc*vec2skew(xc)*q*(MatrixXd::Identity(3,3)/m)*q.inverse();
+        MatrixXd pTcpL = (Bc*vec2skew(q*xc)*vec2skew(xc) - Bth*I)*q*(I/m)*q.inverse();
+
+        J_c.block<3,3>(7,0) = pFcpx;
+        J_c.block<3,3>(10,0) = pTcpx;
+        J_c.block<3,4>(7,3) = pFcpq;
+        J_c.block<3,4>(10,3) = pTcpq;
+        J_c.block<3,3>(7,7) = pFcpP;
+        J_c.block<3,3>(10,7) = pTcpP;
+        J_c.block<3,3>(7,10) = pFcpL;
+        J_c.block<3,3>(10,10) = pTcpL;
+
+        MatrixXd Q_ = Q(q);
+        MatrixXd pQpx_ = pQpx();
+        MatrixXd pQpy_ = pQpy();
+        MatrixXd pQpz_ = pQpz();
+        MatrixXd pQpw_ = pQpw();
+
+        MatrixXd pqdotpL = Q_*q*(I/m)*q.inverse();
+        MatrixXd pqdotpq(4,4);
+        pqdotpq.col(0) = pQpx_*w + Q_*pwpqx;
+        pqdotpq.col(1) = pQpy_*w + Q_*pwpqy;
+        pqdotpq.col(2) = pQpz_*w + Q_*pwpqz;
+        pqdotpq.col(3) = pQpw_*w + Q_*pwpqw;
+
+        MatrixXd J_r = MatrixXd::Zero(13,13);
+        J_r.block<3,3>(0,10) = I / m;
+        J_r.block<4,4>(3,3) = pqdotpq;
+        J_r.block<4,3>(3,10) = pqdotpL;
+
+
+        // solve the system
+        MatrixXd A = (MatrixXd::Identity(13,13) + dt*(J_c + J_r));
+        VectorXd b = VectorXd::Zero(13);
+        b.block<3,1>(0,0) = P/m;
+        b.block<4,1>(3,0) = q2vec(0.5*Quaterniond(0,w(0),w(1),w(2))*q);
+        b.block<3,1>(7,0) = dt*F;
+        b.block<3,1>(10,0) = dt*T;
+
+        Vector3d y = A.fullPivLu().solve(b);
+
+        // Implicit Euler INtegration
+        x += y.block<3,1>(0,0);
+        q = Quaterniond(y(3),y(4),y(5),y(6)) + q;
+        q.normalize();
+        v += y.block<3,1>(7,0)/m;
+        w += IbodyInv*y.block<3,1>(10,0);
+
+        updateGraphics();
+
+    }
+
+    void updateGraphics()
+    {
+        pendulum->setLocalPos(x);
+        pendulum->setLocalRot(q.matrix());
     }
 
     // the tool
     cToolCursor* tool;
     Vector3d xc = Vector3d(0.,0.,-0.1); // the coupling position defined wrt pendulum
     Quaterniond qc = Quaterniond::Identity(); // the quaternion orientation defined wrt pendulum
-    double Kc = 1000; // coupling stiffness
-    double Kth = 1000; // angular coupling stiffness
+    double Kc = 10; // coupling stiffness
+    double Kth = 0; // angular coupling stiffness
     double Bc = 10; // linear damping
-    double Bth = 10; // angular damping
+    double Bth = 1; // angular damping
+    Vector3d Fc = Vector3d::Zero();
+    Vector3d Tc = Vector3d::Zero();
 
     // the pendulum
-    cShapeCylinder* pendulum;
+    cMesh* pendulum;
 
     // parameters for the pendulum
     double r = 0.01; // the radius
@@ -113,10 +372,10 @@ struct Pendulum
     MatrixXd J = InertiaTensorCylinder(m,r,l); // the moment of inertia
 
     // pendulum states
-    Quaterniond q; // the orientation
-    Vector3d w; // the angular velocity
-    Vector3d x; // the linear displacement
-    Vector3d v; // the linear velocity
+    Quaterniond q = Quaterniond::Identity(); // the orientation
+    Vector3d w = Vector3d(0,0,0); // the angular velocity
+    Vector3d x = Vector3d::Zero(); // the linear displacement
+    Vector3d v = Vector3d::Zero(); // the linear velocity
 };
 
 Pendulum* pendulum;
@@ -629,73 +888,23 @@ void updateHaptics(void)
     simulationRunning  = true;
     simulationFinished = false;
 
+    cPrecisionClock clock;
+    clock.start(true);
+
     // main haptic simulation loop
     while(simulationRunning)
     {
-        /////////////////////////////////////////////////////////////////////
-        // READ HAPTIC DEVICE
-        /////////////////////////////////////////////////////////////////////
 
-        // read position
-        cVector3d position;
-        hapticDevice->getPosition(position);
+        // time the loop
+        clock.stop();
+        double dt = clock.getCurrentTimeSeconds();
+        clock.start(true);
 
-        // read orientation
-        cMatrix3d rotation;
-        hapticDevice->getRotation(rotation);
-
-        // read gripper position
-        double gripperAngle;
-        hapticDevice->getGripperAngleRad(gripperAngle);
-
-        // read linear velocity
-        cVector3d linearVelocity;
-        hapticDevice->getLinearVelocity(linearVelocity);
-
-        // read angular velocity
-        cVector3d angularVelocity;
-        hapticDevice->getAngularVelocity(angularVelocity);
-
-        // read gripper angular velocity
-        double gripperAngularVelocity;
-        hapticDevice->getGripperAngularVelocity(gripperAngularVelocity);
-
-        // read user-switch status (button 0)
-        bool button0, button1, button2, button3;
-        button0 = false;
-        button1 = false;
-        button2 = false;
-        button3 = false;
-
-        hapticDevice->getUserSwitch(0, button0);
-        hapticDevice->getUserSwitch(1, button1);
-        hapticDevice->getUserSwitch(2, button2);
-        hapticDevice->getUserSwitch(3, button3);
-
-        /////////////////////////////////////////////////////////////////////
-        //// UPDATE 3D CURSOR MODEL
-        /////////////////////////////////////////////////////////////////////
-
-
-        /////////////////////////////////////////////////////////////////////
-        //// COMPUTE AND APPLY FORCES
-        /////////////////////////////////////////////////////////////////////
-
-        // desired position
-        cVector3d desiredPosition;
-        desiredPosition.set(0.0, 0.0, 0.0);
-
-        // desired orientation
-        cMatrix3d desiredRotation;
-        desiredRotation.identity();
-
-        // variables for forces
-        cVector3d force (0,0,0);
-        cVector3d torque (0,0,0);
-        double gripperForce = 0.0;
+        // update the dynamics of the simulation
+        pendulum->ImplicitEuler(dt);
 
         // send computed force, torque, and gripper force to haptic device
-        hapticDevice->setForceAndTorqueAndGripperForce(force, torque, gripperForce);
+        hapticDevice->setForceAndTorqueAndGripperForce(pendulum->Fc, pendulum->Tc, 0);
 
         // signal frequency counter
         freqCounterHaptics.signal(1);
