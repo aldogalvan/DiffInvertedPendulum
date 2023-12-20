@@ -1,8 +1,0 @@
-# ninja log v5
-2760	2924	1701897476776562800	DiffInvertedPendulum	ad3f590a974d58c7
-0	2757	1701897476612562630	CMakeFiles/DiffInvertedPendulum.dir/main.cpp.o	e43b801d22908a76
-0	5	0	clean	a6a0b8a8041b8512
-1	2813	1701922114923205747	CMakeFiles/DiffInvertedPendulum.dir/main.cpp.o	5055d1cd6265ee8a
-2813	2945	1701922115051200859	DiffInvertedPendulum	e77a709c455966c8
-1	9259	1702017137083801290	CMakeFiles/DiffInvertedPendulum.dir/main.cpp.o	5055d1cd6265ee8a
-9259	9470	1702017137291798506	DiffInvertedPendulum	e77a709c455966c8
