@@ -7,6 +7,7 @@
 #include <fstream>
 #include <vector>
 #include <string>
+
 //------------------------------------------------------------------------------
 using namespace Eigen;
 using namespace chai3d;
@@ -47,7 +48,6 @@ MatrixXd pApaz()
     return ret;
 }
 
-
 MatrixXd pApas()
 {
     MatrixXd ret = MatrixXd::Identity(4,4);
@@ -73,6 +73,8 @@ Quaterniond operator*(double scalar, const Quaterniond& q) {
 Quaterniond operator+(const Quaterniond& q1, const Quaterniond& q2) {
     return Quaterniond(q1.w() + q2.w(), q1.x() + q2.x(), q1.y() + q2.y(), q1.z() + q2.z());
 }
+
+
 
 // Overload the << operator for Eigen::Quaterniond
 std::ostream& operator<<(std::ostream& os, const Eigen::Quaterniond& q) {
@@ -188,9 +190,11 @@ MatrixXd q2mat(Quaterniond& q)
 
 struct Pendulum
 {
-    Pendulum(cToolCursor* a_tool)
+    Pendulum(cGenericTool* a_device, cShapeSphere* a_tool = NULL, cShapeSphere* a_marker = NULL)
     {
+        device = a_device;
         tool = a_tool;
+        marker = a_marker;
 
         // create a sphere (cursor) to represent the haptic device
         pendulum = new cMesh();
@@ -207,15 +211,16 @@ struct Pendulum
         com /= pendulum->getNumVertices();
         pendulum->offsetVertices(-com);
 
-        J = InertiaTensorCylinder(m,r,l);
+        J = InertiaTensorCylinder(m,r,l);\
+        J.setIdentity(); J *= 1e-3;
         Jinv = J.inverse();
 
-        cVector3d pos = tool->getDeviceGlobalPos();
+        cVector3d pos = device->getDeviceGlobalPos();
         x = pos.eigen() - xc;
-        q = Eigen::AngleAxisd(3.14, Eigen::Vector3d::UnitY());
     }
 
     ~Pendulum(){}
+
 
     static Matrix3d InertiaTensorCylinder(double mass, double radius, double height) {
         Matrix3d inertiaTensor;
@@ -229,85 +234,46 @@ struct Pendulum
         return inertiaTensor;
     }
 
-    void SemiImplicitEuler(double dt)
-    {
-
-        Matrix3d M_ = Matrix3d::Identity()*m;
-        Matrix3d J_ = q*J*q.inverse();
-        Matrix3d Jinv_ = q*Jinv*q.inverse();
-
-        cVector3d pos = tool->getDeviceGlobalPos();
-        cVector3d vel = tool->getDeviceGlobalLinVel();
-        cMatrix3d rot = tool->getDeviceGlobalRot();
-        cVector3d rotvel = tool->getDeviceGlobalAngVel();
-
-        xh = pos.eigen();
-        vh = vel.eigen();
-        qh = Quaterniond(rot.eigen());
-        wh = rotvel.eigen();
-
-        Quaterniond q_inv = q.inverse();
-        Quaterniond dq = qh*q_inv;
-        Vector3d u_c = 2*acos(dq.w())*dq.vec();
-
-        // feedback force
-        // used only for haptics
-        // In reality we do position control
-        Fc = Kc*(xh - (x + q*xc)) + Bc*(vh - (v + w.cross(xc)));
-        Tc = (q*xc).cross(Fc);// + Kth*(u_c) + Bth*(wh - w);
-
-        Vector3d F = Fc + m*Vector3d(0,0,-0.0098);
-        Vector3d T = Tc;
-
-        // explicit euler integration
-        v += dt*M_.inverse()*F;
-        v(0) = 0;
-        x += v*dt;
-        w += dt*Jinv_*T;
-        w(1) = 0;
-        w(2) = 0;
-        q = q + 0.5*dt*Quaterniond(0,w(0),w(1),w(2))*q;
-        q.normalize();
-
-        updateGraphics();
-
-    }
-
     void ImplicitEuler(double dt)
     {
         cout << " --------------------------------- " << endl;
 
         Matrix3d M_ = Matrix3d::Identity()*m;
-        MatrixXd P = m*v;
-        MatrixXd J_inv = q*J.inverse()*q.inverse();
+        Vector3d v = P/m;
         MatrixXd R = q.matrix();
-        MatrixXd L = R*J*R.transpose()*w;
+        Vector3d w = R*Jinv*R.transpose()*L;
         MatrixXd I = MatrixXd::Identity(3,3);
         Quaterniond qc = Quaterniond::Identity();
 
-        cVector3d pos = tool->getDeviceGlobalPos();
-        cVector3d vel = tool->getDeviceGlobalLinVel();
-        cMatrix3d rot = tool->getDeviceGlobalRot();
-        cVector3d rotvel = tool->getDeviceGlobalAngVel();
+        xh = device->getDeviceGlobalPos().eigen();
+        xh = Vector3d(0.005,0.005,0.005);
+        vh = device->getDeviceGlobalLinVel().eigen();
+        qh = Quaterniond(device->getDeviceGlobalRot().eigen());
+        wh = device->getDeviceGlobalAngVel().eigen();
 
-        xh = pos.eigen();
-        vh = vel.eigen();
-        qh = Quaterniond(rot.eigen());
-        wh = rotvel.eigen();
+        cout << "xh = " << xh.transpose() << endl;
+        cout << "qh = " << qh.w() << " " << qh.x() << " " << qh.y() << " " << qh.z() << endl;
+        cout << "x = " << x.transpose() << endl;
+        cout << "q = " << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << endl;
+        cout << "v = " << v.transpose() << endl;
+        cout << "w = " << w.transpose() << endl;
 
         Quaterniond q_inv = q.inverse();
         Quaterniond deltaq = (qh*qc.inverse()*q_inv).normalized();
         MatrixXd C = Vector4d(deltaq.x(),deltaq.y(),deltaq.z(),deltaq.w())*RowVector4d(q_inv.x(),q_inv.y(),q_inv.z(),q_inv.w());
-        Vector3d u_c(1,0,0);
-        if (abs(1-deltaq.w()) > 1e-6)
-            u_c = 2*acos(deltaq.w())*deltaq.vec();
+        Vector3d u_c = 2 * acos(deltaq.w()) * deltaq.vec();
+
+        cout << "u_c = " << u_c.transpose() << endl;
 
         // coupling force
         Fc = Kc*(xh - (x + q*xc)) + Bc*(vh - (v + w.cross(xc)));
-        Fc(0) = 0;
-        Tc = (q*xc).cross(Fc) + Kth*(u_c) - Bth*(wh - w);
-        Tc(1) = 0; Tc(2) = 0;
+        //Fc(0) = 0;
+        Tc = ((Vector3d)(R*xc)).cross(Fc) + Kth*u_c + Bth*(wh - w);
 
+        cout << "Fc = "<< Fc.transpose() << endl;
+        cout << "Tc1 = " << ((Vector3d)(R*xc)).cross(Fc).transpose() << endl;
+        cout << "Tc2 = " <<  Kth*u_c.transpose()  << endl;
+        cout << "Tc = " << Tc.transpose() << endl;
         // sum total forces
         Vector3d F = Fc + m*Vector3d(0,0,-0.0981);
         Vector3d T = Tc;
@@ -321,10 +287,10 @@ struct Pendulum
         MatrixXd pRpw_ = pRpw(q); //! CHECK!
 
         // Derivative of angular velocity wrt quaternion
-        VectorXd pwpqx = (pRpx_*(I/m)*q.inverse() + q*(I/m)*pRpx_.transpose())*L; //! CHECK
-        VectorXd pwpqy = (pRpy_*(I/m)*q.inverse() + q*(I/m)*pRpy_.transpose())*L; //! CHECK
-        VectorXd pwpqz = (pRpz_*(I/m)*q.inverse() + q*(I/m)*pRpz_.transpose())*L; //! CHECK
-        VectorXd pwpqw = (pRpw_*(I/m)*q.inverse() + q*(I/m)*pRpw_.transpose())*L; //! CHECK
+        VectorXd pwpqx = (pRpx_*Jinv*R.transpose() + R*Jinv*pRpx_.transpose())*L; //! CHECK
+        VectorXd pwpqy = (pRpy_*Jinv*R.transpose() + R*Jinv*pRpy_.transpose())*L; //! CHECK
+        VectorXd pwpqz = (pRpz_*Jinv*R.transpose() + R*Jinv*pRpz_.transpose())*L; //! CHECK
+        VectorXd pwpqw = (pRpw_*Jinv*R.transpose() + R*Jinv*pRpw_.transpose())*L; //! CHECK
 
         // derivatives of force with respect to quaternion
         VectorXd pFcpqx= -Kc*pRpx_*xc + Bc * vec2skew(xc)*pwpqx; //! CHECK!
@@ -332,32 +298,39 @@ struct Pendulum
         VectorXd pFcpqz= -Kc*pRpz_*xc + Bc * vec2skew(xc)*pwpqz; //! CHECK!
         VectorXd pFcpqw= -Kc*pRpw_*xc + Bc * vec2skew(xc)*pwpqw; //! CHECK!
 
-        MatrixXd pupq = 2*acos(deltaq.w())*C.block<3,4>(0,0) - 2/(sqrt(1-deltaq.w()*deltaq.w()))*deltaq.vec()*C.block<1,4>(3,0); //! CHECK!
-        cout << "pupq = \n" << pupq << endl;
+        MatrixXd pupq;
+        if (abs(1-deltaq.w()) > 1e-6) {
+            pupq = 2 * acos(deltaq.w()) * C.block<3, 4>(0, 0) -
+                   2 / (sqrt(1 - deltaq.w() * deltaq.w())) * deltaq.vec() * C.block<1, 4>(3, 0); //! CHECK!
+        }
+        else {
+            pupq = MatrixXd::Zero(3,4); //! CHECK!
+        }
+        //        cout << "pupq = \n" << pupq << endl;
         // Elements of Jacobian
         MatrixXd pFcpx = -Kc*MatrixXd::Identity(3,3); //! CHECK!
-        MatrixXd pTcpx = vec2skew(R*xc)*pFcpx; //! CHECK!
+        MatrixXd pTcpx = -Kc*vec2skew(R*xc); //! CHECK!
         MatrixXd pFcpq(3,4);
         pFcpq.col(0) = pFcpqx; //! CHECK!
         pFcpq.col(1) = pFcpqy; //! CHECK!
         pFcpq.col(2) = pFcpqz; //! CHECK!
         pFcpq.col(3) = pFcpqw; //! CHECK!
         MatrixXd pTcpq(3,4);
-        pTcpq.col(0) = vec2skew(q*xc)*pFcpqx - vec2skew(Fc)*pRpx_*xc + Kth*pupq.col(0) - Bth*pwpqx; //! Check!
-        pTcpq.col(1) = vec2skew(q*xc)*pFcpqy - vec2skew(Fc)*pRpy_*xc + Kth*pupq.col(1) - Bth*pwpqy; //! Check!
-        pTcpq.col(2) = vec2skew(q*xc)*pFcpqz - vec2skew(Fc)*pRpz_*xc + Kth*pupq.col(2) - Bth*pwpqz; //! Check!
-        pTcpq.col(3) = vec2skew(q*xc)*pFcpqw - vec2skew(Fc)*pRpw_*xc + Kth*pupq.col(3) - Bth*pwpqw; //! Check!
-        MatrixXd pFcpP = Bc*I/m; //! Check!
-        MatrixXd pTcpP = vec2skew(q*xc)*pFcpP; //! Check!
-        MatrixXd pFcpL = Bc*vec2skew(xc)*R*J_inv*R.transpose();
-        MatrixXd pTcpL = (Bc*vec2skew(R*xc)*vec2skew(xc) - Bth*I)*R*J_inv*R.transpose();
+        pTcpq.col(0) = vec2skew(R*xc)*pFcpqx - vec2skew(Fc)*pRpx_*xc + Kth*pupq.col(0) - Bth*pwpqx; //! Check!
+        pTcpq.col(1) = vec2skew(R*xc)*pFcpqy - vec2skew(Fc)*pRpy_*xc + Kth*pupq.col(1) - Bth*pwpqy; //! Check!
+        pTcpq.col(2) = vec2skew(R*xc)*pFcpqz - vec2skew(Fc)*pRpz_*xc + Kth*pupq.col(2) - Bth*pwpqz; //! Check!
+        pTcpq.col(3) = vec2skew(R*xc)*pFcpqw - vec2skew(Fc)*pRpw_*xc + Kth*pupq.col(3) - Bth*pwpqw; //! Check!
+        MatrixXd pFcpP = -Bc*I/m; //! Check!
+        MatrixXd pTcpP = -(Bc/m)*vec2skew(R*xc); //! Check!
+        MatrixXd pFcpL = Bc*vec2skew(xc)*R*Jinv*R.transpose();
+        MatrixXd pTcpL = (Bc*vec2skew(R*xc)*vec2skew(xc) - Bth*I)*R*Jinv*R.transpose();
 
         J_c.block<3,3>(7,0) = pFcpx;
         J_c.block<3,3>(10,0) = pTcpx;
         J_c.block<3,4>(7,3) = pFcpq;
         J_c.block<3,4>(10,3) = pTcpq;
         J_c.block<3,3>(7,7) = pFcpP;
-        J_c.block<3,3>(10,7) = pTcpP;
+        J_c.block<3,3>(10,7) = pTcpP;;
         J_c.block<3,3>(7,10) = pFcpL;
         J_c.block<3,3>(10,10) = pTcpL;
 
@@ -367,7 +340,7 @@ struct Pendulum
         MatrixXd pQpz_ = pQpz(); //! CHECK
         MatrixXd pQpw_ = pQpw(); //! CHECK
 
-        MatrixXd pqdotpL = Q_*R*J_inv*R.transpose();
+        MatrixXd pqdotpL = Q_*R*Jinv*R.transpose();
         MatrixXd pqdotpq(4,4);
         pqdotpq.col(0) = pQpx_*w + Q_*pwpqx;
         pqdotpq.col(1) = pQpy_*w + Q_*pwpqy;
@@ -382,69 +355,136 @@ struct Pendulum
         // solve the system
         MatrixXd A = (MatrixXd::Identity(13,13) - dt*(J_c + J_r));
         VectorXd b = VectorXd::Zero(13);
-        b.block<3,1>(0,0) = dt*P/m;
-        b.block<4,1>(3,0) = dt*q2vec(0.5*Quaterniond(0,w(0),w(1),w(2))*q);
-        b.block<3,1>(7,0) = dt*F;
-        b.block<3,1>(10,0) = dt*T;
-        cout << "A = \n" << A << endl << "b = " << b.transpose() << endl;
-        Vector3d y = A.fullPivLu().solve(b);
+        b.block<3,1>(0,0)  = dt * P / m;
+        b.block<4,1>(3,0)  = dt * Q_ * w;
+        b.block<3,1>(7,0)  = dt * F;
+        b.block<3,1>(10,0) = dt * T;
+        VectorXd y = A.fullPivLu().solve(b);
+//        cout << "A = \n" << A << endl;
+//        cout << "b = " << b.transpose() << endl;
+        cout << "ds = " << y.transpose() << endl;
 
         // Implicit Euler Integration
+        P += y.block<3,1>(7,0);
+        L += y.block<3,1>(10,0);
         x += y.block<3,1>(0,0);
-        q = Quaterniond(y(3),y(4),y(5),y(6)) + q;
+        //Quaterniond dq =  (dt/2)*Quaterniond(0,w(0),w(1),w(2))*Quaterniond(y(6),y(3),y(4),y(5));
+        Quaterniond dq = Quaterniond(y(6),y(3),y(4),y(5));
+        q = q + dq;
+        cout << "dq = " << dq.w() << " " << dq.x() << " " << dq.y() << " " << dq.z() << endl;
         q.normalize();
-        v += y.block<3,1>(7,0)/m;
-        w += J_inv*y.block<3,1>(10,0);
 
+
+        updateGraphics();
+    }
+
+    void ExplicitEuler(double dt)
+    {
+        cout << " --------------------------------- " << endl;
+
+        Matrix3d M_ = Matrix3d::Identity()*m;
+        Vector3d v = P/m;
+        MatrixXd R = q.matrix();
+        Vector3d w = R*Jinv*R.transpose()*L;
+        MatrixXd I = MatrixXd::Identity(3,3);
+        Quaterniond qc = Quaterniond::Identity();
+
+        xh = device->getDeviceGlobalPos().eigen();
+        vh = device->getDeviceGlobalLinVel().eigen();
+        qh = Quaterniond(device->getDeviceGlobalRot().eigen());
+        wh = device->getDeviceGlobalAngVel().eigen();
+
+        cout << "xh = " << xh.transpose() << endl;
         cout << "x = " << x.transpose() << endl;
-        cout << "q = " << q.w() << " , " << q.x() << " , " << q.y() << " , " << q.z() << endl;
+        cout << "q = " << q.w() << " " << q.x() << " " << q.y() << " " << q.z() << endl;
         cout << "v = " << v.transpose() << endl;
         cout << "w = " << w.transpose() << endl;
 
-        updateGraphics();
+        Quaterniond q_inv = q.inverse();
+        Quaterniond deltaq = (qh*qc.inverse()*q_inv).normalized();
+        Vector3d u_c = 2 * acos(deltaq.w()) * deltaq.vec();
 
+        cout << "u_c = " << u_c.transpose() << endl;
+
+        // coupling force
+        Fc = Kc*(xh - (x + q*xc)) + Bc*(vh - (v + w.cross(xc)));
+        Tc = ((Vector3d)(R*xc)).cross(Fc) + Kth*u_c + Bth*(wh - w);
+
+        cout << "Fc  = "  << Fc.transpose() << endl;
+        cout << "Tc1 = " << ((Vector3d)(R*xc)).cross(Fc).transpose() << endl;
+        cout << "Tc2 = " <<  Kth*u_c.transpose()  << endl;
+        cout << "Tc  = " << Tc.transpose() << endl;
+
+        // Compute net force and torque
+        Vector3d F = Fc + m*Vector3d(0,0,-0.0981);
+        Vector3d T = Tc;
+
+        // Update linear and angular momentum
+        P += dt * F;
+        L += dt * T;
+
+        // Update position and orientation
+        x += dt * P / m;
+        w = R*Jinv*R.transpose()*L;
+        Quaterniond qdot = dt * 0.5 * Quaterniond(0, w.x(), w.y(), w.z()) * q;
+        cout << "qdot = " << qdot << endl;
+        q.w() += qdot.w();
+        q.x() += qdot.x();
+        q.y() += qdot.y();
+        q.z() += qdot.z();
+        q.normalize();
+
+        cVector3d temp = pendulum->getLocalPos();
+        marker->setLocalPos(temp);
+
+        updateGraphics();
     }
 
     void updateGraphics()
     {
+        tool->setLocalPos(xh);
         pendulum->setLocalPos(x);
         pendulum->setLocalRot(q.matrix());
+        cVector3d temp = pendulum->getLocalPos();
+        marker->setLocalPos(temp);
     }
 
     // parameters for the pendulum
     double r = 0.01; // the radius (just for visualization)
     double l = 0.2; // the length
-    double m = 1; // the mass
+    double m = 0.1; // the mass
     MatrixXd J; // the moment of inertia
     MatrixXd Jinv; // the inverse moment of inertia
 
     // the tool
-    cToolCursor* tool;
+    cGenericTool* device;
+    cShapeSphere* tool;
     Vector3d xc = Vector3d(0.,0.,-l/2); // the coupling position defined wrt pendulum
     Quaterniond qc = Quaterniond::Identity(); // the quaternion orientation defined wrt pendulum
-    double Kc = 1; // coupling stiffness
-    double Kth = 1; // angular coupling stiffness
+    double Kc = 100; // coupling stiffness
+    double Kth = 0; // angular coupling stiffness
     double Bc = 1; // linear damping
-    double Bth = 1; // angular damping
+    double Bth = 0; // angular damping
     Vector3d Fc = Vector3d::Zero();
     Vector3d Tc = Vector3d::Zero();
 
     // the pendulum
     cMesh* pendulum;
 
-
     // pendulum states
-    Quaterniond q = Quaterniond::Identity(); // the orientation
-    Vector3d w = Vector3d(0,0,0); // the angular velocity
+    Quaterniond q = Quaterniond(AngleAxisd(45, Eigen::Vector3d::UnitX())); //Quaterniond::Identity(); // the orientation
+    Vector3d L = Vector3d(0,0,0); // the angular velocity
     Vector3d x = Vector3d::Zero(); // the linear displacement
-    Vector3d v = Vector3d::Zero(); // the linear velocity
-    double vcap = 1;
+    Vector3d P = Vector3d::Zero(); // the linear velocity
 
     // haptic states
     Quaterniond qh = Quaterniond::Identity(); // the orientation
     Vector3d wh = Vector3d(0,0,0); // the angular velocity
     Vector3d xh = Vector3d::Zero(); // the linear displacement
     Vector3d vh = Vector3d::Zero(); // the linear velocity
+
+    // a marker for debugging
+    cShapeSphere* marker;
 };
 
 Pendulum* pendulum;
@@ -460,7 +500,6 @@ bool fullscreen = false;
 
 // mirrored display
 bool mirroredDisplay = false;
-
 
 //------------------------------------------------------------------------------
 // DECLARED VARIABLES
@@ -482,7 +521,9 @@ cHapticDeviceHandler* handler;
 cGenericHapticDevicePtr hapticDevice;
 
 // the cursor representing the haptic device
-cToolCursor* tool;
+cGenericTool* device;
+cShapeSphere* tool;
+cShapeSphere* marker;
 
 // a label to display the haptic device model
 cLabel* labelHapticDeviceModel;
@@ -727,27 +768,28 @@ int main(int argc, char* argv[])
     hapticDevice->setEnableGripperUserSwitch(true);
 
     // create a tool (cursor) and insert into the world
-    tool = new cToolCursor(world);
+    device = new cGenericTool(world);
+    world->addChild(device);
+    tool = new cShapeSphere(0.015);
     world->addChild(tool);
+    tool->m_material->setBlueLight();
+    marker = new cShapeSphere(0.015);
+    world->addChild(marker);
+    marker->m_material->setYellow();
 
     // connect the haptic device to the virtual tool
-    tool->setHapticDevice(hapticDevice);
+    device->setHapticDevice(hapticDevice);
 
     // map the physical workspace of the haptic device to a larger virtual workspace.
-    tool->setWorkspaceRadius(1.0);
-
-    // define a radius for the virtual tool (sphere)
-    tool->setRadius(0.015);
-    tool->setShowFrame(false);
-    tool->m_material->setRed();
+    device->setWorkspaceRadius(1.0);
 
     // haptic forces are enabled only if small forces are first sent to the device;
     // this mode avoids the force spike that occurs when the application starts when
     // the tool is located inside an object for instance.
-    tool->setWaitForSmallForce(true);
+    device->setWaitForSmallForce(true);
 
     // start the haptic tool
-    tool->start();
+    device->start();
 
     //--------------------------------------------------------------------------
     // WIDGETS
@@ -774,7 +816,7 @@ int main(int argc, char* argv[])
     // START SIMULATION
     //--------------------------------------------------------------------------
 
-    pendulum = new Pendulum(tool);
+    pendulum = new Pendulum(device,tool,marker);
     world->addChild(pendulum->pendulum);
     // create a thread which starts the main haptics rendering loop
     hapticsThread = new cThread();
@@ -982,13 +1024,13 @@ void updateHaptics(void)
         simTime += dt;
         clock.start(true);
 
-        tool->updateFromDevice();
+        device->updateFromDevice();
 
         // update the dynamics of the simulation
         pendulum->ImplicitEuler(dt);
 
         // send computed force, torque, and gripper force to haptic device
-        hapticDevice->setForceAndTorqueAndGripperForce(pendulum->Fc, pendulum->Tc, 0);
+        hapticDevice->setForceAndTorqueAndGripperForce(-cVector3d(pendulum->Fc), -cVector3d(pendulum->Tc), 0);
 
         writeData(file,simTime);
 
@@ -1006,9 +1048,9 @@ void updateHaptics(void)
 void writeData(std::ofstream& file, double simTime)
 {
     Vector3d x = pendulum->x;
-    Vector3d v = pendulum->v;
+    Vector3d v = pendulum->P/pendulum->m;
     Quaterniond q = pendulum->q;
-    Vector3d w = pendulum->w;
+    Vector3d w = pendulum->q*pendulum->J*pendulum->q.inverse()*pendulum->L;
 
     Vector3d xh = pendulum->xh;
     Vector3d vh = pendulum->vh;
